@@ -1,3 +1,54 @@
+server:
+  port: 8082
+  servlet:
+    context-path: /jackpot-service
+
 spring:
   application:
     name: jackpot-service
+
+  datasource:
+    url: jdbc:h2:mem:jackpotdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: password
+
+  jpa:
+    hibernate:
+      ddl-auto: update   # Creates/updates schema automatically in H2
+    show-sql: true       # Helpful for debugging with H2
+    properties:
+      hibernate:
+        format_sql: true
+        jdbc:
+          batch_size: 50
+        order_inserts: true
+        order_updates: true
+
+  h2:
+    console:
+      enabled: true       # Enables web console at /h2-console
+      path: /h2-console   # Access via http://localhost:8082/h2-console
+
+  kafka:
+    bootstrap-servers: localhost:9092
+    consumer:
+      group-id: jackpot-service
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: com.jackpot.model
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      properties:
+        linger.ms: 5
+        batch.size: 16384
+        compression.type: snappy
+
+logging:
+  level:
+    root: INFO
+    org.springframework.kafka: INFO
+    com.jackpot: DEBUG

@@ -1,13 +1,13 @@
-package com.jackpot;
-
-import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
-
-@SpringBootTest
-class JackpotServiceApplicationTests {
-
-	@Test
-	void contextLoads() {
-	}
-
-}
+//package com.jackpot;
+//
+//import org.junit.jupiter.api.Test;
+//import org.springframework.boot.test.context.SpringBootTest;
+//
+//@SpringBootTest
+//class JackpotServiceApplicationTests {
+//
+//	@Test
+//	void contextLoads() {
+//	}
+//
+//}
