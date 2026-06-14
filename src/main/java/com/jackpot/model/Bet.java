@@ -1,29 +1,36 @@
 package com.jackpot.model;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.relational.core.mapping.Table;
+import org.springframework.data.relational.core.mapping.Column;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-@Entity
-@Data                   // generates getters, setters, equals, hashCode, toString
-@NoArgsConstructor      // generates a no-args constructor
-@AllArgsConstructor     // generates an all-args constructor
-@Builder                // enables builder pattern
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+@Table("bets")   // <-- match your actual table name
 public class Bet {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-    private Long userId;
-    private Long jackpotId;
-    private BigDecimal amount;
-    private LocalDateTime createdAt;
-}
 
+    @Id
+    @Column("id")   // <-- match your actual column name
+    private Long id;
+
+    @Column("user_id")
+    private Long userId;
+
+    @Column("jackpot_id")
+    private Long jackpotId;
+
+    @Column("amount")
+    private BigDecimal amount;
+
+    @Column("created_at")
+    private LocalDateTime createdAt = LocalDateTime.now();
+}

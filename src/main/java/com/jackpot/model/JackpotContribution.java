@@ -1,40 +1,44 @@
 package com.jackpot.model;
 
-import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.relational.core.mapping.Table;
+import org.springframework.data.relational.core.mapping.Column;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-@Entity
-@Table(name = "jackpot_contribution")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@Table("jackpot_contribution")   // R2DBC mapping
 public class JackpotContribution {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private Long id;   // Auto-increment handled in schema (data.sql)
 
+    @Column("bet_id")
     private Long betId;
+
+    @Column("user_id")
     private Long userId;
+
+    @Column("jackpot_id")
     private Long jackpotId;
 
-    @Column(name = "stake_amount", nullable = false)
+    @Column("stake_amount")
     private BigDecimal stakeAmount;
 
-    @Column(name = "contribution_amount", nullable = false)
+    @Column("contribution_amount")
     private BigDecimal contributionAmount;
 
-    @Column(name = "current_jackpot_amount", nullable = false)
+    @Column("current_jackpot_amount")
     private BigDecimal currentJackpotAmount;
 
-    @Column(name = "created_at")
+    @Column("created_at")
     private LocalDateTime createdAt = LocalDateTime.now();
 }
-

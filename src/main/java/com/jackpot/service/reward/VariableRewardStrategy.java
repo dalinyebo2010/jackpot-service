@@ -6,11 +6,21 @@ import java.math.BigDecimal;
 
 @Component
 public class VariableRewardStrategy implements RewardStrategy {
-    public boolean isWinner(BigDecimal currentPool) {
-        double chance = currentPool.doubleValue() > 10000 ? 1.0 : currentPool.doubleValue() / 10000.0;
-        return Math.random() < chance;
+
+    @Override
+    public String getName() {
+        return "VARIABLE";
     }
+
+    @Override
+    public boolean isWinner(BigDecimal currentPool) {
+        // Example: win if pool is divisible by 7
+        return currentPool.remainder(new BigDecimal("7")).equals(BigDecimal.ZERO);
+    }
+
+    @Override
     public BigDecimal calculateReward(BigDecimal currentPool) {
-        return currentPool;
+        // Example: reward is 20% of current pool
+        return currentPool.multiply(new BigDecimal("0.20"));
     }
 }

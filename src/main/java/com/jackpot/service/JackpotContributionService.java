@@ -1,13 +1,12 @@
 package com.jackpot.service;
 
 import com.jackpot.model.Bet;
-import com.jackpot.model.Jackpot;
 import com.jackpot.model.JackpotContribution;
 import com.jackpot.repository.JackpotContributionRepository;
 import com.jackpot.repository.JackpotRepository;
 import com.jackpot.service.contribution.ContributionStrategy;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import reactor.core.publisher.Mono;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -16,6 +15,7 @@ import java.util.stream.Collectors;
 
 @Service
 public class JackpotContributionService {
+
     private final JackpotRepository jackpotRepo;
     private final JackpotContributionRepository contributionRepo;
     private final Map<String, ContributionStrategy> strategies;
@@ -25,31 +25,37 @@ public class JackpotContributionService {
                                       List<ContributionStrategy> strategyList) {
         this.jackpotRepo = jackpotRepo;
         this.contributionRepo = contributionRepo;
+        // Use strategy.getName() instead of class name
         this.strategies = strategyList.stream()
-                .collect(Collectors.toMap(s -> s.getClass().getSimpleName(), s -> s));
+                .collect(Collectors.toMap(ContributionStrategy::getName, s -> s));
     }
 
-    @Transactional
-    public void processContribution(Bet bet) {
-        Jackpot jackpot = jackpotRepo.findById(bet.getJackpotId())
-                .orElseThrow(() -> new IllegalArgumentException("Jackpot not found"));
+    public Mono<Void> processContribution(Bet bet) {
+        return jackpotRepo.findById(bet.getJackpotId())
+                .switchIfEmpty(Mono.error(new IllegalArgumentException("Jackpot not found")))
+                .flatMap(jackpot -> {
+                    ContributionStrategy strategy = strategies.get(jackpot.getContributionStrategy());
+                    if (strategy == null) {
+                        return Mono.error(new IllegalArgumentException(
+                                "Unknown contribution strategy: " + jackpot.getContributionStrategy()));
+                    }
 
-        ContributionStrategy strategy = strategies.get(jackpot.getContributionStrategy() + "ContributionStrategy");
-        BigDecimal contribution = strategy.calculateContribution(bet.getAmount(), jackpot.getCurrentPool());
+                    BigDecimal contribution = strategy.calculateContribution(bet.getAmount(), jackpot.getCurrentPool());
+                    jackpot.setCurrentPool(jackpot.getCurrentPool().add(contribution));
 
-        jackpot.setCurrentPool(jackpot.getCurrentPool().add(contribution));
-        jackpotRepo.save(jackpot);
+                    JackpotContribution jc = JackpotContribution.builder()
+                            .betId(bet.getId())
+                            .userId(bet.getUserId())
+                            .jackpotId(bet.getJackpotId())
+                            .stakeAmount(bet.getAmount())
+                            .contributionAmount(contribution)
+                            .currentJackpotAmount(jackpot.getCurrentPool())
+                            .build();
 
-        JackpotContribution jc = JackpotContribution.builder()
-                .betId(bet.getId())
-                .userId(bet.getUserId())
-                .jackpotId(bet.getJackpotId())
-                .stakeAmount(bet.getAmount())
-                .contributionAmount(contribution)
-                .currentJackpotAmount(jackpot.getCurrentPool())
-                .build();
-
-        contributionRepo.save(jc);
+                    // Save jackpot update, then save contribution
+                    return jackpotRepo.save(jackpot)
+                            .then(contributionRepo.save(jc))
+                            .then();
+                });
     }
 }
-

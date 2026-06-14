@@ -1,41 +1,28 @@
 server:
   port: 8082
-  servlet:
-    context-path: /jackpot-service
 
 spring:
   application:
     name: jackpot-service
 
-  datasource:
-    url: jdbc:h2:mem:jackpotdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
-    driver-class-name: org.h2.Driver
+  webflux:
+    base-path: /jackpot-service   # Correct for WebFlux
+
+  r2dbc:
+    url: r2dbc:h2:mem:///jackpotdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
     username: sa
     password: password
 
-  jpa:
-    hibernate:
-      ddl-auto: update   # Creates/updates schema automatically in H2
-    show-sql: true       # Helpful for debugging with H2
-    defer-datasource-initialization: true   # 👈 ensures data.sql runs after JPA creates tables
-    properties:
-      hibernate:
-        format_sql: true
-        jdbc:
-          batch_size: 50
-        order_inserts: true
-        order_updates: true
-
   sql:
     init:
-      mode: always                          # 👈 always run SQL scripts
-      data-locations: classpath:data.sql    # 👈 points to your data.sql file
-      continue-on-error: true               # 👈 prevents startup failure if a statement fails
+      mode: always
+      data-locations: classpath:data.sql
+      continue-on-error: true
 
   h2:
     console:
-      enabled: true       # Enables web console at /h2-console
-      path: /h2-console   # Access via http://localhost:8082/h2-console
+      enabled: true
+      path: /h2-console   # Access via http://localhost:8082/jackpot-service/h2-console
 
   kafka:
     bootstrap-servers: localhost:9092
@@ -54,8 +41,17 @@ spring:
         batch.size: 16384
         compression.type: snappy
 
+management:
+  endpoints:
+    web:
+      base-path: /jackpot-service/actuator
+      exposure:
+        include: "*"
+
 logging:
   level:
     root: INFO
     org.springframework.kafka: INFO
     com.jackpot: DEBUG
+    org.springframework.web: DEBUG
+    org.springframework.web.reactive.result.method.annotation.RequestMappingHandlerMapping: TRACE

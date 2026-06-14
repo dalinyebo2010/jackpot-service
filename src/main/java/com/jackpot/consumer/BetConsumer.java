@@ -8,18 +8,22 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class BetConsumer {
+
     private final JackpotContributionService contributionService;
     private final JackpotRewardService rewardService;
 
-    public BetConsumer(JackpotContributionService contributionService, JackpotRewardService rewardService) {
+    public BetConsumer(JackpotContributionService contributionService,
+                       JackpotRewardService rewardService) {
         this.contributionService = contributionService;
         this.rewardService = rewardService;
     }
 
     @KafkaListener(topics = "jackpot-bets", groupId = "jackpot-service")
     public void consume(Bet bet) {
-        contributionService.processContribution(bet);
-        rewardService.evaluateReward(bet);
+        contributionService.processContribution(bet)
+                .then(rewardService.evaluateReward(bet))
+                .doOnNext(reward -> System.out.println("Reward saved: " + reward))
+                .doOnError(err -> System.err.println("Error processing bet: " + err.getMessage()))
+                .subscribe();
     }
 }
-

@@ -1,44 +1,43 @@
 package com.jackpot.model;
 
-import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.relational.core.mapping.Table;
+import org.springframework.data.relational.core.mapping.Column;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-@Entity
-@Table(name = "jackpot")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@Table("jackpot")   // R2DBC mapping annotation
 public class Jackpot {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private Long id;   // R2DBC does not support GenerationType.IDENTITY; use auto-increment in schema
 
     private String name;
 
-    @Column(name = "initial_pool", nullable = false)
+    @Column("initial_pool")
     private BigDecimal initialPool;
 
-    @Column(name = "current_pool", nullable = false)
+    @Column("current_pool")
     private BigDecimal currentPool;
 
-    @Column(name = "contribution_strategy", nullable = false)
+    @Column("contribution_strategy")
     private String contributionStrategy; // FIXED, VARIABLE
 
-    @Column(name = "reward_strategy", nullable = false)
+    @Column("reward_strategy")
     private String rewardStrategy; // FIXED, VARIABLE
 
-    @Column(name = "created_at")
-    private LocalDateTime createdAt = LocalDateTime.now();
+    @Column("created_at")
+    private LocalDateTime createdAt;
 
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt = LocalDateTime.now();
+    @Column("updated_at")
+    private LocalDateTime updatedAt;
 }
-

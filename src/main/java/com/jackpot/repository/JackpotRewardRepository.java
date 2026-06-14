@@ -1,10 +1,10 @@
 package com.jackpot.repository;
 
 import com.jackpot.model.JackpotReward;
-import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.repository.reactive.ReactiveCrudRepository;
+import reactor.core.publisher.Mono;
 
-import java.util.Optional;
-
-public interface JackpotRewardRepository extends JpaRepository<JackpotReward, Long> {
-    Optional<JackpotReward> findByBetId(Long betId);
+public interface JackpotRewardRepository extends ReactiveCrudRepository<JackpotReward, Long> {
+    Mono<JackpotReward> findByBetId(Long betId);
 }
+
