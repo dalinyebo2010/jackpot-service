@@ -17,6 +17,7 @@ spring:
     hibernate:
       ddl-auto: update   # Creates/updates schema automatically in H2
     show-sql: true       # Helpful for debugging with H2
+    defer-datasource-initialization: true   # 👈 ensures data.sql runs after JPA creates tables
     properties:
       hibernate:
         format_sql: true
@@ -24,6 +25,12 @@ spring:
           batch_size: 50
         order_inserts: true
         order_updates: true
+
+  sql:
+    init:
+      mode: always                          # 👈 always run SQL scripts
+      data-locations: classpath:data.sql    # 👈 points to your data.sql file
+      continue-on-error: true               # 👈 prevents startup failure if a statement fails
 
   h2:
     console:
