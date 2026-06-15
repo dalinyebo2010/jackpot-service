@@ -18,4 +18,14 @@ public class FixedContributionStrategy implements ContributionStrategy {
     public BigDecimal calculateContribution(BigDecimal betAmount, BigDecimal currentPool) {
         return betAmount.multiply(percentage);
     }
+
+    @Override
+    public BigDecimal getPercentage() {
+        return percentage.multiply(BigDecimal.valueOf(100)); // return as % (e.g. 5)
+    }
+
+    @Override
+    public boolean isFixed() {
+        return true;
+    }
 }

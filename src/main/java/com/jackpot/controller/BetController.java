@@ -1,47 +1,74 @@
 package com.jackpot.controller;
 
+import com.jackpot.exception.BetNotFoundException;
+import com.jackpot.exception.NoRewardException;
 import com.jackpot.model.Bet;
 import com.jackpot.model.JackpotReward;
-import com.jackpot.producer.BetProducer;
 import com.jackpot.repository.BetRepository;
+import com.jackpot.service.BetService;
 import com.jackpot.service.JackpotRewardService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
-import reactor.core.scheduler.Schedulers;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.HashMap;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/bets")
 public class BetController {
 
-    private final BetProducer betProducer;
+    private static final Logger log = LoggerFactory.getLogger(BetController.class);
+
+    private final BetService betService;
     private final JackpotRewardService rewardService;
     private final BetRepository betRepository;
 
-    public BetController(BetProducer betProducer,
+    public BetController(BetService betService,
                          JackpotRewardService rewardService,
                          BetRepository betRepository) {
-        this.betProducer = betProducer;
+        this.betService = betService;
         this.rewardService = rewardService;
         this.betRepository = betRepository;
     }
 
+    /**
+     * Place a bet:
+     * - Saves bet
+     * - Processes contribution
+     * - Publishes to Kafka
+     */
     @PostMapping
     public Mono<ResponseEntity<String>> publishBet(@RequestBody Bet bet) {
-        // Kafka producer is blocking → wrap in boundedElastic
-        return Mono.fromCallable(() -> {
-            betProducer.publishBet(bet);
-            return ResponseEntity.ok("Bet published");
-        }).subscribeOn(Schedulers.boundedElastic());
+        return betService.placeBet(bet)
+                .map(savedBet -> ResponseEntity.ok("Bet published with ID: " + savedBet.getId()));
     }
 
-    @GetMapping("/{betId}/evaluate")
-    public Mono<ResponseEntity<JackpotReward>> evaluate(@PathVariable Long betId) {
-        return betRepository.findById(betId)
-                .switchIfEmpty(Mono.error(new IllegalArgumentException("Bet not found")))
-                .flatMap(rewardService::evaluateReward)
-                .map(ResponseEntity::ok)
-                // Always return 200 OK, even if no reward was generated
-                .defaultIfEmpty(ResponseEntity.ok().build());
+    @GetMapping("/{id}/evaluate")
+    public Mono<ResponseEntity<Map<String, Object>>> evaluate(@PathVariable Long id) {
+        return betRepository.findById(id)
+                .flatMap(bet -> rewardService.evaluateReward(bet)
+                        .map(reward -> {
+                            Map<String, Object> response = new HashMap<>();
+                            response.put("betId", reward.getBetId());
+                            response.put("jackpotId", reward.getJackpotId());
+                            response.put("winner", true);
+                            response.put("rewardAmount", reward.getRewardAmount());
+                            response.put("percentageUsed", reward.getPercentageUsed());
+                            response.put("strategyType", reward.getStrategyType());
+                            return ResponseEntity.ok(response);
+                        })
+                        .onErrorResume(NoRewardException.class, ex -> {
+                            Map<String, Object> response = new HashMap<>();
+                            response.put("betId", bet.getId());
+                            response.put("jackpotId", bet.getJackpotId());
+                            response.put("winner", false);
+                            response.put("message", ex.getMessage());
+                            return Mono.just(ResponseEntity.ok(response));
+                        })
+                );
     }
+
 }

@@ -41,4 +41,11 @@ public class JackpotContribution {
 
     @Column("created_at")
     private LocalDateTime createdAt = LocalDateTime.now();
+
+    // for clarity
+    @Column("percentage_used")
+    private BigDecimal percentageUsed;   // e.g. 10% contribution
+
+    @Column("strategy_type")
+    private String strategyType;         // "FIXED" or "VARIABLE"
 }

@@ -19,7 +19,7 @@ import java.time.LocalDateTime;
 public class JackpotReward {
 
     @Id
-    private Long id;   // Auto-increment handled in schema (data.sql)
+    private Long id;
 
     @Column("bet_id")
     private Long betId;
@@ -35,4 +35,11 @@ public class JackpotReward {
 
     @Column("created_at")
     private LocalDateTime createdAt = LocalDateTime.now();
+
+    // fields for clarity
+    @Column("percentage_used")
+    private BigDecimal percentageUsed;   // e.g. 20% reward
+
+    @Column("strategy_type")
+    private String strategyType;         // "FIXED" or "VARIABLE"
 }

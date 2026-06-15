@@ -7,6 +7,8 @@ import java.math.BigDecimal;
 @Component
 public class FixedRewardStrategy implements RewardStrategy {
 
+    private final BigDecimal percentage = new BigDecimal("0.20"); // 20%
+
     @Override
     public String getName() {
         return "FIXED";
@@ -20,7 +22,17 @@ public class FixedRewardStrategy implements RewardStrategy {
 
     @Override
     public BigDecimal calculateReward(BigDecimal currentPool) {
-        // Example: fixed reward of 1000
-        return new BigDecimal("1000");
+        // Reward is always 20% of pool
+        return currentPool.multiply(percentage);
+    }
+
+    @Override
+    public BigDecimal getPercentage(BigDecimal currentPool) {
+        return percentage.multiply(BigDecimal.valueOf(100)); // return as % (e.g. 20)
+    }
+
+    @Override
+    public boolean isFixed() {
+        return true;
     }
 }

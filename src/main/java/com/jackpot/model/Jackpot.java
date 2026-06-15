@@ -35,6 +35,9 @@ public class Jackpot {
     @Column("reward_strategy")
     private String rewardStrategy; // FIXED, VARIABLE
 
+    @Column("contribution_percentage")
+    private BigDecimal contributionPercentage; // e.g. 0.05 for FIXED, 0.10 for VARIABLE
+
     @Column("created_at")
     private LocalDateTime createdAt;
 

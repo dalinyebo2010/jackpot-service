@@ -1,5 +1,8 @@
 package com.jackpot.service;
 
+import com.jackpot.exception.JackpotNotFoundException;
+import com.jackpot.exception.NoRewardException;
+import com.jackpot.exception.StrategyNotFoundException;
 import com.jackpot.model.Bet;
 import com.jackpot.model.JackpotReward;
 import com.jackpot.repository.JackpotRepository;
@@ -25,19 +28,56 @@ public class JackpotRewardService {
                                 List<RewardStrategy> strategyList) {
         this.jackpotRepo = jackpotRepo;
         this.rewardRepo = rewardRepo;
-        // Use strategy.getName() instead of class name
         this.strategies = strategyList.stream()
                 .collect(Collectors.toMap(RewardStrategy::getName, s -> s));
     }
 
     public Mono<JackpotReward> evaluateReward(Bet bet) {
+        return rewardRepo.findByBetId(bet.getId())
+                .switchIfEmpty(
+                        jackpotRepo.findById(bet.getJackpotId())
+                                .switchIfEmpty(Mono.error(new JackpotNotFoundException(bet.getJackpotId())))
+                                .flatMap(jackpot -> {
+                                    RewardStrategy strategy = strategies.get(jackpot.getRewardStrategy());
+                                    if (strategy == null) {
+                                        return Mono.error(new StrategyNotFoundException("reward", jackpot.getRewardStrategy()));
+                                    }
+
+                                    // Use contribution percentage from jackpot entity
+                                    BigDecimal contributionPercentage = jackpot.getContributionPercentage();
+                                    BigDecimal contribution = bet.getAmount().multiply(contributionPercentage);
+                                    jackpot.setCurrentPool(jackpot.getCurrentPool().add(contribution));
+
+                                    if (strategy.isWinner(jackpot.getCurrentPool())) {
+                                        BigDecimal rewardAmount = strategy.calculateReward(jackpot.getCurrentPool());
+
+                                        JackpotReward jr = JackpotReward.builder()
+                                                .betId(bet.getId())
+                                                .userId(bet.getUserId())
+                                                .jackpotId(bet.getJackpotId())
+                                                .rewardAmount(rewardAmount)
+                                                .percentageUsed(strategy.getPercentage(jackpot.getCurrentPool()))
+                                                .strategyType(strategy.isFixed() ? "FIXED" : "VARIABLE")
+                                                .build();
+
+                                        return rewardRepo.save(jr)
+                                                .flatMap(savedReward -> {
+                                                    jackpot.setCurrentPool(jackpot.getInitialPool());
+                                                    return jackpotRepo.save(jackpot).thenReturn(savedReward);
+                                                });
+                                    }
+                                    return Mono.error(new NoRewardException(bet.getId()));
+                                })
+                );
+    }
+
+    public Mono<JackpotReward> tryEvaluateReward(Bet bet) {
         return jackpotRepo.findById(bet.getJackpotId())
-                .switchIfEmpty(Mono.error(new IllegalArgumentException("Jackpot not found")))
+                .switchIfEmpty(Mono.error(new JackpotNotFoundException(bet.getJackpotId())))
                 .flatMap(jackpot -> {
                     RewardStrategy strategy = strategies.get(jackpot.getRewardStrategy());
                     if (strategy == null) {
-                        return Mono.error(new IllegalArgumentException(
-                                "Unknown reward strategy: " + jackpot.getRewardStrategy()));
+                        return Mono.error(new StrategyNotFoundException("reward", jackpot.getRewardStrategy()));
                     }
 
                     if (strategy.isWinner(jackpot.getCurrentPool())) {
@@ -48,6 +88,8 @@ public class JackpotRewardService {
                                 .userId(bet.getUserId())
                                 .jackpotId(bet.getJackpotId())
                                 .rewardAmount(rewardAmount)
+                                .percentageUsed(strategy.getPercentage(jackpot.getCurrentPool()))
+                                .strategyType(strategy.isFixed() ? "FIXED" : "VARIABLE")
                                 .build();
 
                         return rewardRepo.save(jr)
@@ -56,12 +98,7 @@ public class JackpotRewardService {
                                     return jackpotRepo.save(jackpot).thenReturn(savedReward);
                                 });
                     }
-                    return Mono.empty(); // no reward
-                })
-                .doOnError(err -> System.err.println("Error evaluating reward: " + err.getMessage()));
-    }
-
-    public Mono<JackpotReward> findRewardByBetId(Long betId) {
-        return rewardRepo.findByBetId(betId);
+                    return Mono.empty();
+                });
     }
 }
