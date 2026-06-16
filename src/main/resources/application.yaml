@@ -48,6 +48,16 @@ management:
       exposure:
         include: "*"
 
+jackpot:
+  fixed:
+    percentage: 0.20
+    threshold: 5000
+  variable:
+    divisor: 7
+    threshold: 5000
+    lowFactor: 0.05
+    highFactor: 0.10
+
 logging:
   level:
     root: INFO

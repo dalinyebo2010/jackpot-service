@@ -1,5 +1,6 @@
 package com.jackpot.service.reward;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
@@ -7,7 +8,12 @@ import java.math.BigDecimal;
 @Component
 public class FixedRewardStrategy implements RewardStrategy {
 
-    private final BigDecimal percentage = new BigDecimal("0.20"); // 20%
+    // Injected from application.properties
+    @Value("${jackpot.fixed.percentage}")
+    private BigDecimal percentage; // default 20%
+
+    @Value("${jackpot.fixed.threshold}")
+    private BigDecimal threshold;  // default 5000
 
     @Override
     public String getName() {
@@ -16,13 +22,13 @@ public class FixedRewardStrategy implements RewardStrategy {
 
     @Override
     public boolean isWinner(BigDecimal currentPool) {
-        // Example: win if pool exceeds 5000
-        return currentPool.compareTo(new BigDecimal("5000")) > 0;
+        // Win if pool exceeds configured threshold
+        return currentPool.compareTo(threshold) > 0;
     }
 
     @Override
     public BigDecimal calculateReward(BigDecimal currentPool) {
-        // Reward is always 20% of pool
+        // Reward is always configured percentage of pool
         return currentPool.multiply(percentage);
     }
 

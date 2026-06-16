@@ -1,11 +1,24 @@
 package com.jackpot.service.reward;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 
 @Component
 public class VariableRewardStrategy implements RewardStrategy {
+
+    @Value("${jackpot.variable.divisor}")
+    private BigDecimal divisor; // default 7
+
+    @Value("${jackpot.variable.threshold}")
+    private BigDecimal threshold; // default 5000
+
+    @Value("${jackpot.variable.lowFactor:}")
+    private BigDecimal lowFactor; // default 5%
+
+    @Value("${jackpot.variable.highFactor}")
+    private BigDecimal highFactor; // default 10%
 
     @Override
     public String getName() {
@@ -14,8 +27,8 @@ public class VariableRewardStrategy implements RewardStrategy {
 
     @Override
     public boolean isWinner(BigDecimal currentPool) {
-        // Example: win if pool is divisible by 7
-        return currentPool.remainder(BigDecimal.valueOf(7)).equals(BigDecimal.ZERO);
+        // Win if pool is divisible by configured divisor
+        return currentPool.remainder(divisor).compareTo(BigDecimal.ZERO) == 0;
     }
 
     @Override
@@ -36,8 +49,7 @@ public class VariableRewardStrategy implements RewardStrategy {
     }
 
     private BigDecimal getFactor(BigDecimal currentPool) {
-        return currentPool.compareTo(new BigDecimal("5000")) < 0
-                ? new BigDecimal("0.50")   // 50% if pool < 5000
-                : new BigDecimal("0.10");  // 10% otherwise
+        // Use configured threshold and factors
+        return currentPool.compareTo(threshold) < 0 ? lowFactor : highFactor;
     }
 }

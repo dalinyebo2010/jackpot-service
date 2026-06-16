@@ -4,6 +4,7 @@ import com.jackpot.exception.BetNotFoundException;
 import com.jackpot.exception.NoRewardException;
 import com.jackpot.model.Bet;
 import com.jackpot.model.JackpotReward;
+import com.jackpot.producer.BetProducer;
 import com.jackpot.repository.BetRepository;
 import com.jackpot.service.BetService;
 import com.jackpot.service.JackpotRewardService;
@@ -23,13 +24,16 @@ public class BetController {
     private static final Logger log = LoggerFactory.getLogger(BetController.class);
 
     private final BetService betService;
+    private final BetProducer betProducer;
     private final JackpotRewardService rewardService;
     private final BetRepository betRepository;
 
     public BetController(BetService betService,
+                         BetProducer betProducer,
                          JackpotRewardService rewardService,
                          BetRepository betRepository) {
         this.betService = betService;
+        this.betProducer = betProducer;
         this.rewardService = rewardService;
         this.betRepository = betRepository;
     }
@@ -43,7 +47,13 @@ public class BetController {
     @PostMapping
     public Mono<ResponseEntity<String>> publishBet(@RequestBody Bet bet) {
         return betService.placeBet(bet)
-                .map(savedBet -> ResponseEntity.ok("Bet published with ID: " + savedBet.getId()));
+                .flatMap(savedBet -> {
+                    // Publish the saved bet with its actual DB id
+                    betProducer.publishBet(savedBet);
+                    return Mono.just(ResponseEntity.ok(
+                            "Bet published with ID: " + savedBet.getId()
+                    ));
+                });
     }
 
     @GetMapping("/{id}/evaluate")
@@ -68,7 +78,21 @@ public class BetController {
                             response.put("message", ex.getMessage());
                             return Mono.just(ResponseEntity.ok(response));
                         })
-                );
+                        .switchIfEmpty(Mono.just(ResponseEntity.ok(Map.of(
+                                "betId", bet.getId(),
+                                "jackpotId", bet.getJackpotId(),
+                                "winner", false,
+                                "message", "No reward generated for bet id: " + bet.getId()
+                        ))))
+                )
+                // Throw exception instead of returning empty 404
+                .switchIfEmpty(Mono.error(new BetNotFoundException(id)))
+                .onErrorResume(ex -> {
+                    Map<String, Object> response = new HashMap<>();
+                    response.put("betId", id);
+                    response.put("winner", false);
+                    response.put("message", "Unexpected error: " + ex.getMessage());
+                    return Mono.just(ResponseEntity.status(500).body(response));
+                });
     }
-
 }

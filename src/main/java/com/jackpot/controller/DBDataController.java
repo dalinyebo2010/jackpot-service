@@ -10,12 +10,12 @@ import java.util.HashMap;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/debug")
-public class DebugController {
+@RequestMapping("/data")
+public class DBDataController {
 
     private final DatabaseClient client;
 
-    public DebugController(DatabaseClient client) {
+    public DBDataController(DatabaseClient client) {
         this.client = client;
     }
 

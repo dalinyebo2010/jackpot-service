@@ -1,7 +1,6 @@
 package com.jackpot.service;
 
 import com.jackpot.exception.JackpotNotFoundException;
-import com.jackpot.exception.NoRewardException;
 import com.jackpot.exception.StrategyNotFoundException;
 import com.jackpot.model.Bet;
 import com.jackpot.model.JackpotReward;
@@ -32,6 +31,10 @@ public class JackpotRewardService {
                 .collect(Collectors.toMap(RewardStrategy::getName, s -> s));
     }
 
+    /**
+     * Evaluate reward when explicitly requested (e.g. via controller).
+     * Uses the already updated pool from contribution service.
+     */
     public Mono<JackpotReward> evaluateReward(Bet bet) {
         return rewardRepo.findByBetId(bet.getId())
                 .switchIfEmpty(
@@ -43,34 +46,38 @@ public class JackpotRewardService {
                                         return Mono.error(new StrategyNotFoundException("reward", jackpot.getRewardStrategy()));
                                     }
 
-                                    // Use contribution percentage from jackpot entity
-                                    BigDecimal contributionPercentage = jackpot.getContributionPercentage();
-                                    BigDecimal contribution = bet.getAmount().multiply(contributionPercentage);
-                                    jackpot.setCurrentPool(jackpot.getCurrentPool().add(contribution));
+                                    BigDecimal currentPool = jackpot.getCurrentPool();
 
-                                    if (strategy.isWinner(jackpot.getCurrentPool())) {
-                                        BigDecimal rewardAmount = strategy.calculateReward(jackpot.getCurrentPool());
+                                    if (strategy.isWinner(currentPool)) {
+                                        BigDecimal rewardAmount = strategy.calculateReward(currentPool);
 
                                         JackpotReward jr = JackpotReward.builder()
                                                 .betId(bet.getId())
                                                 .userId(bet.getUserId())
                                                 .jackpotId(bet.getJackpotId())
                                                 .rewardAmount(rewardAmount)
-                                                .percentageUsed(strategy.getPercentage(jackpot.getCurrentPool()))
+                                                .percentageUsed(strategy.getPercentage(currentPool))
                                                 .strategyType(strategy.isFixed() ? "FIXED" : "VARIABLE")
                                                 .build();
 
                                         return rewardRepo.save(jr)
                                                 .flatMap(savedReward -> {
+                                                    // Reset pool only after a win
                                                     jackpot.setCurrentPool(jackpot.getInitialPool());
                                                     return jackpotRepo.save(jackpot).thenReturn(savedReward);
                                                 });
                                     }
-                                    return Mono.error(new NoRewardException(bet.getId()));
+
+                                    // No reward → return empty instead of error
+                                    return Mono.empty();
                                 })
                 );
     }
 
+    /**
+     * Try to evaluate reward immediately after contribution.
+     * Same logic as evaluateReward, but called from consumer.
+     */
     public Mono<JackpotReward> tryEvaluateReward(Bet bet) {
         return jackpotRepo.findById(bet.getJackpotId())
                 .switchIfEmpty(Mono.error(new JackpotNotFoundException(bet.getJackpotId())))
@@ -80,24 +87,29 @@ public class JackpotRewardService {
                         return Mono.error(new StrategyNotFoundException("reward", jackpot.getRewardStrategy()));
                     }
 
-                    if (strategy.isWinner(jackpot.getCurrentPool())) {
-                        BigDecimal rewardAmount = strategy.calculateReward(jackpot.getCurrentPool());
+                    BigDecimal currentPool = jackpot.getCurrentPool();
+
+                    if (strategy.isWinner(currentPool)) {
+                        BigDecimal rewardAmount = strategy.calculateReward(currentPool);
 
                         JackpotReward jr = JackpotReward.builder()
                                 .betId(bet.getId())
                                 .userId(bet.getUserId())
                                 .jackpotId(bet.getJackpotId())
                                 .rewardAmount(rewardAmount)
-                                .percentageUsed(strategy.getPercentage(jackpot.getCurrentPool()))
+                                .percentageUsed(strategy.getPercentage(currentPool))
                                 .strategyType(strategy.isFixed() ? "FIXED" : "VARIABLE")
                                 .build();
 
                         return rewardRepo.save(jr)
                                 .flatMap(savedReward -> {
+                                    // Reset pool after reward
                                     jackpot.setCurrentPool(jackpot.getInitialPool());
                                     return jackpotRepo.save(jackpot).thenReturn(savedReward);
                                 });
                     }
+
+                    // No reward is a normal outcome → return empty instead of error
                     return Mono.empty();
                 });
     }

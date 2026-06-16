@@ -43,13 +43,16 @@ public class JackpotContributionService {
 
                     // Calculate contribution based on strategy
                     BigDecimal contribution = strategy.calculateContribution(bet.getAmount(), jackpot.getCurrentPool());
-                    jackpot.setCurrentPool(jackpot.getCurrentPool().add(contribution));
+
+                    // Update jackpot pool
+                    BigDecimal newPool = jackpot.getCurrentPool().add(contribution);
+                    jackpot.setCurrentPool(newPool);
 
                     // Determine percentage used dynamically
                     BigDecimal percentageUsed;
                     if (strategy instanceof VariableContributionStrategy) {
                         percentageUsed = ((VariableContributionStrategy) strategy)
-                                .getPercentage(jackpot.getCurrentPool());
+                                .getPercentage(newPool);
                     } else {
                         percentageUsed = strategy.getPercentage();
                     }
@@ -61,13 +64,14 @@ public class JackpotContributionService {
                             .jackpotId(bet.getJackpotId())
                             .stakeAmount(bet.getAmount())
                             .contributionAmount(contribution)
-                            .currentJackpotAmount(jackpot.getCurrentPool())
+                            .currentJackpotAmount(newPool) // use updated pool
                             .percentageUsed(percentageUsed)
                             .strategyType(strategy.isFixed() ? "FIXED" : "VARIABLE")
                             .build();
 
+                    // Save updated jackpot first, then contribution
                     return jackpotRepo.save(jackpot)
-                            .then(contributionRepo.save(jc));
+                            .flatMap(savedJackpot -> contributionRepo.save(jc));
                 });
     }
 }
