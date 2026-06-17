@@ -27,6 +27,7 @@ How to Run
 
 Step 1: Start Kafka
 
+
 Download Kafka from kafka.apache.org
 
 Run the following commands with BASH:
@@ -41,7 +42,9 @@ Kafka runs on localhost:9092.
 
 Topic jackpot-bets will be auto-created.
 
+
 Step 2: Run the Application
+
 
 Download jackpot-service-0.0.1-SNAPSHOT.jar from Releases.
 
@@ -51,9 +54,14 @@ Run the following with BASH:
 
 Application starts on http://localhost:8082
 
-Console output: Started Application in X seconds... Netty started on port 8082
+
+Console output: 
+
+Started Application in X seconds... Netty started on port 8082
+
 
 Step 3: Test with Postman / Bruno
+
 
 API Endpoints
 ----------------
@@ -126,7 +134,9 @@ GET  http://localhost:8082/jackpot-service/data/all
 
 After placing a bet, you can run this endpoint again to see data from other tables e.g. bet table, etc.
 
+
 2. Publish Bet to Kafka
+
 
 POST  http://localhost:8082/jackpot-service/bets
 
