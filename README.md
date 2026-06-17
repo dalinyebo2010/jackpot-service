@@ -32,10 +32,14 @@ Download Kafka from kafka.apache.org
 Run the following commands with BASH:
 
 cd C:\kafka\kafka_2.13-4.1.1
+
 bin\windows\kafka-storage.bat format -t %RANDOM% -c config\server.properties
+
 bin\windows\kafka-server-start.bat config\server.properties
 
-Kafka runs on localhost:9092. Topic jackpot-bets will be auto-created.
+Kafka runs on localhost:9092. 
+
+Topic jackpot-bets will be auto-created.
 
 Step 2: Run the Application
 
@@ -46,6 +50,7 @@ Run the following with BASH:
    java -jar jackpot-service-0.0.1-SNAPSHOT.jar
 
 Application starts on http://localhost:8082
+
 Console output: Started Application in X seconds... Netty started on port 8082
 
 Step 3: Test with Postman / Bruno
@@ -144,13 +149,13 @@ Bet published with ID: 1
    Response:
 
    {
-  "percentageUsed": 20.00,
-  "winner": true,
-  "jackpotId": 1,
-  "betId": 1,
-  "rewardAmount": 1202.00,
-  "strategyType": "FIXED"
-}  
+	  "percentageUsed": 20.00,
+	  "winner": true,
+	  "jackpotId": 1,
+	  "betId": 1,
+	  "rewardAmount": 1202.00,
+	  "strategyType": "FIXED"
+	}  
 
 Another run:
 ----------------
@@ -169,6 +174,7 @@ Bet published with ID: 2
 
 Did the bet win?
 Run: 
+
 GET   http://localhost:8082/jackpot-service/bets/2/evaluate
 
 Response:
@@ -197,6 +203,7 @@ Bet published with ID: 3
 
 Did the bet win?
 Run: 
+
 GET   http://localhost:8082/jackpot-service/bets/3/evaluate
 
 Response:
@@ -225,6 +232,7 @@ Bet published with ID: 4
 
 Did the bet win?
 Run: 
+
 GET   http://localhost:8082/jackpot-service/bets/4/evaluate
 
 Response:
@@ -244,6 +252,7 @@ I'll check whether or not the is laced is winning I'll supply a bet ID that does
 
 Did the bet win?
 Run: 
+
 GET   http://localhost:8082/jackpot-service/bets/14/evaluate
 
 Response:
