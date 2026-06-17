@@ -258,7 +258,7 @@ Response:
 Another run:
 -----------
 
-I'll check whether or not the is laced is winning I'll supply a bet ID that does not exist:
+I'll check whether or not the is placed is winning I'll supply a bet ID that does not exist:
 
 Did the bet win?
 Run: 
