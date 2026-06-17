@@ -1,6 +1,10 @@
 Jackpot Bets API
 -----------------
 
+## Download JAR
+
+https://github.com/dalinyebo2010/jackpot-service/releases/tag/v1.0.0
+
 Spring Boot REST API with Apache Kafka integration and H2 in-memory database.
 
 Tech Stack
@@ -21,6 +25,14 @@ To run and test this application, you need:
 2. Apache Kafka (kafka_2.13-4.1.1) - Kafka Raft mode  - NO ZOOKEEPER:
    Required because endpoints publish to and consume from Kafka topic jackpot-bets
 3. Postman or any API client for testing
+
+IMPORTANT REMARKS
+------------------
+
+1. I could have used Okta for identity management.
+2. I could have used TDOs
+3. I used Webflux + R2DBC for asynchronous calls
+
 
 How to Run
 ----------
